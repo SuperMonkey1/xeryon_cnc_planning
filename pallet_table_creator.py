@@ -26,6 +26,7 @@ class PalletTableCreator:
         pallet_table_df.insert(1, 'quadrant', quadrant_column)
 
         print(pallet_table_df)
+        return  pallet_table_df
 
         # save this df to excel tab (use general method)
 

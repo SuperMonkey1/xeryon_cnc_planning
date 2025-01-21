@@ -1,7 +1,8 @@
 import pandas as pd
-from openpyxl import load_workbook
 from quadrant import Quadrant
 import openpyxl
+from pathlib import Path
+from openpyxl import Workbook, load_workbook
 
 
 class ExcelReader:
@@ -173,29 +174,56 @@ class ExcelReader:
 
         return quadrants_df
 
-    def create_excel_tab_from_df(self, excel_path, tab_name, df):
-
-        # Load the existing Excel file
-        try:
-            workbook = load_workbook(excel_path)
-        except FileNotFoundError:
-            raise FileNotFoundError(f"The file {excel_path} does not exist.")
+    def create_excel_tab_from_df_old(self, excel_path, tab_name, df):
+        excel_file = Path(excel_path)
+        
+        # If the file doesn't exist, create and save a new workbook
+        if not excel_file.exists():
+            workbook = Workbook()
+            # We keep the default sheet to avoid "At least one sheet must be visible" errors
+            workbook.save(excel_path)
+        
+        # Load the existing (or newly created) workbook
+        workbook = load_workbook(excel_path)
 
         # Check if the tab already exists
         if tab_name in workbook.sheetnames:
             raise ValueError(f"The tab '{tab_name}' already exists in the Excel file.")
 
-        # Add a new sheet with the specified tab name
+        # Write the DataFrame to a new sheet in append mode
         with pd.ExcelWriter(excel_path, engine='openpyxl', mode='a', if_sheet_exists='new') as writer:
             writer.book = workbook
             writer.sheets = {ws.title: ws for ws in workbook.worksheets}
-
-            # Ensure the DataFrame is written to the new sheet
             df.to_excel(writer, sheet_name=tab_name, index=False)
+            writer.close()
+        
+    def create_excel_tab_from_df_old2(self, excel_path, tab_name, df):
+        excel_file = Path(excel_path)
+        
+        # If the file doesn't exist, create and save a new workbook
+        if not excel_file.exists():
+            workbook = Workbook()
+            workbook.save(excel_path)
+        
+        # Load the existing workbook
+        workbook = load_workbook(excel_path)
 
-            # Save changes to the workbook
-            writer.save()
+        if tab_name in workbook.sheetnames:
+            raise ValueError(f"The tab '{tab_name}' already exists in {excel_path}.")
 
-
-
-
+        # Use ExcelWriter in 'append' mode
+        with pd.ExcelWriter(excel_path, engine='openpyxl', mode='a', if_sheet_exists='new') as writer:
+            # Assign the loaded workbook to the underlying engine
+            writer.engine.book = workbook
+            
+            # Let writer know about existing sheets
+            writer.sheets = {ws.title: ws for ws in writer.engine.book.worksheets}
+            
+            # Write DataFrame to the new sheet
+            df.to_excel(writer, sheet_name=tab_name, index=False)
+    
+    def create_excel_tab_from_df(self, excel_path, sheet, df):
+        print(type(df))
+        if not isinstance(df, pd.DataFrame):
+            raise ValueError("The provided df is not a pandas DataFrame")
+        df.to_excel(excel_path,sheet_name=sheet)

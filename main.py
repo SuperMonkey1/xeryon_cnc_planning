@@ -18,6 +18,7 @@ build_directory = project_root_str + '/build/'
 forecast_excel_file_path = resources_directory + "Salesforecast Januari 2025.xlsx"
 planning_excel_file_path = resources_directory + "planning.xlsx"
 excel_file_path_unmerged = resources_directory + "Salesforecast Januari 2025 unmerged.xlsx"
+pallet_table_excel_file_path = build_directory + "pallet_table.xlsx"
 
 #define classes used in main
 excel_reader = ExcelReader(forecast_excel_file_path, planning_excel_file_path)
@@ -27,13 +28,12 @@ excel_reader = ExcelReader(forecast_excel_file_path, planning_excel_file_path)
 # 0 Approach
 ############################
 
-# INLEZEN FORECAST
-#forecast_excel_reader.unmerge_and_fill_values(excel_file_path, excel_file_path_unmerged, "forecast 2025")
+# GENEREER UNSORTED PALLET TABLE
 
-product_type = "XLS"
-product_force = "3"
-product_size = "40"
-month = "januari"
+# product_type = "XLS"
+# product_force = "3"
+# product_size = "40"
+# month = "januari"
 
 product_types = ["XLS","XLS","XLS","XLS" ]
 product_forces = ["3", "3","3", "3"]
@@ -48,24 +48,13 @@ quadrants_df = excel_reader.get_quadrants_df(product_types, product_sizes, produ
 # maak pallet_table
 pallet_table_creator = PalletTableCreator(quadrants_df)
 pallet_table_df = pallet_table_creator.create_pallet_table_df_from_quadrants(quadrants_df)
-#excel_reader.create_excel_tab_from_df(excel_path= planning_excel_file_path, tab_name = "pallet_table", df = pallet_table_df)
+excel_reader.create_excel_tab_from_df(excel_path= pallet_table_excel_file_path, sheet = "pallet_table", df = pallet_table_df)
 
-
-
-# - doe dit x aantal stuks nodig
-# - doe dit voor een lijst van producten en bijbehorende hoeveelheden (die haal je uit forecast)
-
-#excel_reader.get_quadrants_per_product(product)  # geeft een lijst met alle quadranten
-
-
-
-# INLEZEN QUADRANTS EXCEL TAB
-# GENEREER UNSORTED PALLET TABLE
-# - first only XLS_3_040 (jan) (amount required => all bewerkingen x amount required)
-# - then all XLS (jan)
 
 # ANALYSE 
 # - TOTAL MACHINE TIME
+
+
 # - TOTAL MANUAL TIME
 
 
