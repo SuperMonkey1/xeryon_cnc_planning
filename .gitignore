@@ -169,3 +169,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+
+# IP: don not upload Resources, nor builds
+resources/
+build/
