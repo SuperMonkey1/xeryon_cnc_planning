@@ -1,0 +1,7 @@
+* nacht opvullen
+* weekend opvullen
+* invloed meerdere componenten per quadrant (zelfde opzetijd per stuk, bijvoorbeeld meerdere  fixture op 1 quadrant zetten)
+innovaties
+* invloed extra paletten
+* invloed meerdere componenten per quadrant (minder opzet tijd per stuk: innovatieve fixture die meerdere componenten en ook sneller opzet mogelijk maakt )
+* invloed twede bewerking per array (meest voordehand liggende voorbeeld van "invloed meerdere componenten per quadrant")

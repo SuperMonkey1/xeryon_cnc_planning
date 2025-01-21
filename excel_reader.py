@@ -3,6 +3,7 @@ from quadrant import Quadrant
 import openpyxl
 from pathlib import Path
 from openpyxl import Workbook, load_workbook
+import math
 
 
 class ExcelReader:
@@ -172,6 +173,34 @@ class ExcelReader:
             # Append the repeated data to the combined DataFrame
             quadrants_df = pd.concat([quadrants_df, repeated_quadrants_df], ignore_index=True)
 
+        
+        # Create a copy of the DataFrame to avoid modifying the original
+        quadrants_df = quadrants_df.copy()
+
+        # Remove quadrants base on components_per_quadrant
+        unique_ids = quadrants_df['id'].unique()
+
+        for unique_id in unique_ids:
+            # Filter rows with the current id
+            id_quadrants = quadrants_df[quadrants_df['id'] == unique_id]
+            # Get components_per_quadrant (assuming it's the same for all rows of the same id)
+            components_per_quadrant = id_quadrants.iloc[0]['components_per_quadrant']
+
+            # Count the total number of quadrants with this id
+            total_amount_of_quadrants = len(id_quadrants)
+
+            # Calculate the desired number of quadrants
+            amount_of_quadrants = math.ceil(total_amount_of_quadrants/int(components_per_quadrant) )
+            # Remove excess rows to match the desired amount_of_quadrants
+            if total_amount_of_quadrants > amount_of_quadrants:
+                rows_to_keep = id_quadrants.head(amount_of_quadrants)
+                quadrants_df = pd.concat([
+                    quadrants_df[quadrants_df['id'] != unique_id],  # Keep rows with other ids
+                    rows_to_keep
+                ])
+        # Reset the index for cleanliness
+        quadrants_df.reset_index(drop=True, inplace=True)
+
         return quadrants_df
 
     def create_excel_tab_from_df_old(self, excel_path, tab_name, df):
@@ -226,4 +255,15 @@ class ExcelReader:
         print(type(df))
         if not isinstance(df, pd.DataFrame):
             raise ValueError("The provided df is not a pandas DataFrame")
-        df.to_excel(excel_path,sheet_name=sheet)
+
+        # Ensure specified columns are numerical
+        numerical_columns = ['loading_time', 'machine_time', 'unloading_time']
+        for col in numerical_columns:
+            if col in df.columns:
+                try:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+                except Exception as e:
+                    raise ValueError(f"Error converting column {col} to numeric: {e}")
+
+        # Save DataFrame to Excel
+        df.to_excel(excel_path, sheet_name=sheet)

@@ -1,6 +1,7 @@
 from pathlib import Path #For routing files
 from excel_reader import ExcelReader
 from pallet_table_creator import PalletTableCreator
+from pallet_table_optimizer import PalletTableOptimizer
 
 ############################
 # 0 Setup
@@ -48,14 +49,20 @@ quadrants_df = excel_reader.get_quadrants_df(product_types, product_sizes, produ
 # maak pallet_table
 pallet_table_creator = PalletTableCreator(quadrants_df)
 pallet_table_df = pallet_table_creator.create_pallet_table_df_from_quadrants(quadrants_df)
-excel_reader.create_excel_tab_from_df(excel_path= pallet_table_excel_file_path, sheet = "pallet_table", df = pallet_table_df)
 
 
-# ANALYSE 
+# ANALYSE (pallet_table_df)
+# - implement night shift
+pallet_table_optimizer = PalletTableOptimizer(pallet_table_df)
+pallet_table_df_optimized = pallet_table_optimizer.fill_nights()
+excel_reader.create_excel_tab_from_df(excel_path= pallet_table_excel_file_path, sheet = "pallet_table", df = pallet_table_df_optimized)
+
+
 # - TOTAL MACHINE TIME
 
-
 # - TOTAL MANUAL TIME
+
+# Paletten tabel opsplitsen: eentje voor de nacht en eentje (?)
 
 
 
@@ -63,4 +70,6 @@ excel_reader.create_excel_tab_from_df(excel_path= pallet_table_excel_file_path, 
 # TODO: excel manueel moeten unmergen... doe dit  met code
 # TODO: manier waarop excel reader is geimplementeerd is niet goed... liever niet foreacast en planning als parameter: HAAL BASIS df's uit excel en gebruik die dan veder in ANALYZER
 # TODO: tab quadranten: product opsplitsen in product_type, product_size, product_force to align with forecast
-# TODO: data type for excel_reader.get_quadrants should be one big dictionary and not lists or even better: list of products
+# TODO: data type for excel_reader.get_quadrants should be one big dictionary and not lists or even better: list of products ["XLS_3_040", "XLS_3_060"]
+
+#print(f"unique_ids: ${unique_ids}")
