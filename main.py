@@ -1,5 +1,5 @@
 from pathlib import Path #For routing files
-from excel_reader import ExcelReader
+from excel_handler import ExcelHandler
 from pallet_table_creator import PalletTableCreator
 from pallet_table_optimizer import PalletTableOptimizer
 
@@ -22,7 +22,9 @@ excel_file_path_unmerged = resources_directory + "Salesforecast Januari 2025 unm
 pallet_table_excel_file_path = build_directory + "pallet_table.xlsx"
 
 #define classes used in main
-excel_reader = ExcelReader(forecast_excel_file_path, planning_excel_file_path)
+excel_handler = ExcelHandler(forecast_excel_file_path, planning_excel_file_path)
+forecast_df = excel_handler.create_df_from_excel(path = forecast_excel_file_path, sheet_name = "forecast 2025")
+quadrant_types_df = excel_handler.create_df_from_excel(path = planning_excel_file_path, sheet_name = "quadrants")
 
 
 ############################
@@ -31,44 +33,32 @@ excel_reader = ExcelReader(forecast_excel_file_path, planning_excel_file_path)
 
 # GENEREER UNSORTED PALLET TABLE
 
-# product_type = "XLS"
-# product_force = "3"
-# product_size = "40"
-# month = "januari"
-
+# Which products need to be made and which forecast in months
 product_types = ["XLS","XLS","XLS","XLS" ]
 product_forces = ["3", "3","3", "3"]
 product_sizes = ["40", "60", "80", "120"]
 months = ["januari", "januari", "januari", "januari"]
 
-#xls_3_40_count_january = excel_reader.get_product_count(product_type, product_size, product_force, month)
-#xls_3_040_quadrants = excel_reader.get_quadrants_df_per_product(product_type, product_size, product_force)
-
-quadrants_df = excel_reader.get_quadrants_df(product_types, product_sizes, product_forces, months)
-
-# maak pallet_table
-pallet_table_creator = PalletTableCreator(quadrants_df)
-pallet_table_df = pallet_table_creator.create_pallet_table_df_from_quadrants(quadrants_df)
-
+pallet_table_creator = PalletTableCreator(quadrant_types_df, forecast_df)
+pallet_table_df = pallet_table_creator.create_unordered_pallet_table_df_from_quadrants(product_types, product_sizes, product_forces, months)
 
 # ANALYSE (pallet_table_df)
 # - implement night shift
 pallet_table_optimizer = PalletTableOptimizer(pallet_table_df)
 pallet_table_df_optimized = pallet_table_optimizer.fill_nights()
-excel_reader.create_excel_tab_from_df(excel_path= pallet_table_excel_file_path, sheet = "pallet_table", df = pallet_table_df_optimized)
+excel_handler.create_excel_tab_from_df(excel_path= pallet_table_excel_file_path, sheet = "pallet_table", df = pallet_table_df_optimized)
 
 
 # - TOTAL MACHINE TIME
 
 # - TOTAL MANUAL TIME
 
-# Paletten tabel opsplitsen: eentje voor de nacht en eentje (?)
+# Paletten tabel opsplitsen: eentje voor de nacht en eentje (?) voor de dag
 
 
 
 # TODO: excel readen zoals hij effectief gegeven wordt (nu bepaalde aanpassingen gedaan: datum)
 # TODO: excel manueel moeten unmergen... doe dit  met code
-# TODO: manier waarop excel reader is geimplementeerd is niet goed... liever niet foreacast en planning als parameter: HAAL BASIS df's uit excel en gebruik die dan veder in ANALYZER
 # TODO: tab quadranten: product opsplitsen in product_type, product_size, product_force to align with forecast
 # TODO: data type for excel_reader.get_quadrants should be one big dictionary and not lists or even better: list of products ["XLS_3_040", "XLS_3_060"]
 
