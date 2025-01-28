@@ -3,6 +3,7 @@ from openpyxl import load_workbook
 from quadrant import Quadrant
 import openpyxl
 import math
+import sys
 
 
 class PalletTableCreator:
@@ -69,6 +70,7 @@ class PalletTableCreator:
 
             # Append the repeated data to the combined DataFrame
             quadrants_df = pd.concat([quadrants_df, repeated_quadrants_df], ignore_index=True)
+            
 
         
         # Create a copy of the DataFrame to avoid modifying the original
@@ -100,17 +102,22 @@ class PalletTableCreator:
 
         return quadrants_df
 
-
     def create_unordered_pallet_table_df_from_quadrants(self, product_types, product_sizes, product_forces, months): #quadrants is a df with  quadrants
         
-        quadrants = self.get_quadrants_df(product_types, product_sizes, product_forces, months)
-        
+        quadrants_df = self.get_quadrants_df(product_types, product_sizes, product_forces, months)
+
         num_pallets = 5  # Number of unique pallet numbers
         quadrant_count = 4  # Number of times each pallet number is repeated
         quadrant_pattern = ["A", "B", "C", "D"]
         
         #get_info_from_quadrants
-        pallet_table_df = quadrants[["id", "loading_time", "machine_time", "unloading_time"]]
+        pallet_table_df = quadrants_df[["id", "loading_time", "machine_time", "unloading_time", "bewerkings_orde", "components_per_quadrant"]]
+        # Ensure the specified columns are integers
+        pallet_table_df.loc[:, "loading_time"] = pd.to_numeric(pallet_table_df["loading_time"], errors="coerce").fillna(0).astype(int)
+        pallet_table_df.loc[:, "machine_time"] = pd.to_numeric(pallet_table_df["machine_time"], errors="coerce").fillna(0).astype(int)
+        pallet_table_df.loc[:, "unloading_time"] = pd.to_numeric(pallet_table_df["unloading_time"], errors="coerce").fillna(0).astype(int)
+        pallet_table_df.loc[:, "bewerkings_orde"] = pd.to_numeric(pallet_table_df["bewerkings_orde"], errors="coerce").fillna(0).astype(int)
+        pallet_table_df.loc[:, "components_per_quadrant"] = pd.to_numeric(pallet_table_df["components_per_quadrant"], errors="coerce").fillna(0).astype(int)
 
         # PALLET COLUMN
         pallet_column = [pallet for pallet in range(1, num_pallets + 1) for _ in range(quadrant_count)]
@@ -121,7 +128,9 @@ class PalletTableCreator:
         quadrant_column = (quadrant_pattern * (len(pallet_table_df) // len(quadrant_pattern) + 1))[:len(pallet_table_df)]
         pallet_table_df.insert(1, 'quadrant', quadrant_column)
 
-        print(pallet_table_df)
+        # ADD STATUS COLUMN
+        pallet_table_df.insert(2, 'status', "")
+
         return  pallet_table_df
 
         # save this df to excel tab (use general method)
