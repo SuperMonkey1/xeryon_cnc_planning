@@ -46,7 +46,7 @@ months = ["januari", "januari", "januari", "januari"]
 pallet_table_creator = PalletTableCreator(quadrant_types_df, forecast_df)
 unordered_pallet_table_df = pallet_table_creator.create_unordered_pallet_table_df_from_quadrants(product_types, product_sizes, product_forces, months)
 excel_handler.create_excel_tab_from_df(excel_path= pallet_table_excel_file_path, sheet = "unordered_pallet_table", df = unordered_pallet_table_df)
-quadrants_df = unordered_pallet_table_df
+operations_df = unordered_pallet_table_df
 
 # ANALYSE (pallet_table_df)
 # - implement night shift
@@ -56,10 +56,9 @@ quadrants_excel_path = "quadrants.xlsx"
 
 if os.path.exists(quadrants_excel_path):
     # Load the DataFrame from the Excel file
-    quadrants_df = pd.read_excel(quadrants_excel_path)
+    operations_df = pd.read_excel(quadrants_excel_path)
 
-quadrants_df= pallet_table_optimizer.fill_night(quadrants_df = quadrants_df, quadrant_types_df = quadrant_types_df)
-
+assigned_opperations_df= pallet_table_optimizer.fill_night(operations_df = operations_df, quadrant_types_df = quadrant_types_df)
 
 # - TOTAL MACHINE TIME
 

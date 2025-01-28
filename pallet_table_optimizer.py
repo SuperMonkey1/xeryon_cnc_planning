@@ -15,11 +15,11 @@ class PalletTableOptimizer:
         # maak lijn unload time: unload eerst de pallet die het minst lang duurt om te unloaden
         # maak lijn load time: load een pallet (zoek een pallet die ...)
 
-    def fill_night(self, quadrants_df, quadrant_types_df):
+    def fill_night(self, operations_df, quadrant_types_df):
         
         ### DETERMINE MACHINABLE QUADRANTS (either first bewerkingen or follow up quadrants from done quadrants)
-        machinable_quadrants_df = quadrants_df[(quadrants_df['bewerkings_orde'] == 1) & (quadrants_df['status'] != "done")]
-        additional_machinable_df = quadrants_df[quadrants_df['status'] == "unlocked"]
+        machinable_quadrants_df = operations_df[(operations_df['bewerkings_orde'] == 1) & (operations_df['status'] != "done")]
+        additional_machinable_df = operations_df[operations_df['status'] == "unlocked"]
         print("Amount of machinable quadrants of order 1: ", machinable_quadrants_df.shape[0])
         print("additional_machinable_df: ", additional_machinable_df.shape[0])
         machinable_quadrants_df = pd.concat([machinable_quadrants_df, additional_machinable_df]).reset_index(drop=True)
@@ -36,7 +36,7 @@ class PalletTableOptimizer:
         machined_quadrants_df = pd.DataFrame()
         max_quadrants = 20  # Maximum number of quadrants to machine
 
-        while total_machining_time < 840 and len(machined_quadrants_df) < 20:
+        while total_machining_time < 840 and len(machined_quadrants_df) < max_quadrants:
 
             # Identify IDs already in machined_quadrants_df
             existing_ids = set(machined_quadrants_df["id"]) if not machined_quadrants_df.empty else set()
@@ -78,15 +78,15 @@ class PalletTableOptimizer:
 
         ### MARK MACHIEND QUADRANTS AS "DONE"
         for _, row in machined_quadrants_df.iterrows():
-            # Find the indices in quadrants_df where "id" matches and "status" is not already "done"
-            indices_to_update = quadrants_df[
-                (quadrants_df["id"] == row["id"]) & (quadrants_df["status"] != "done")
+            # Find the indices in operations_df where "id" matches and "status" is not already "done"
+            indices_to_update = operations_df[
+                (operations_df["id"] == row["id"]) & (operations_df["status"] != "done")
             ].index
             
-            # Only update one row in quadrants_df per row in machined_quadrants
+            # Only update one row in operations_df per row in machined_quadrants
             if not indices_to_update.empty:
                 index_to_update = indices_to_update[0]  # Take the first matching index
-                quadrants_df.at[index_to_update, "status"] = "done"
+                operations_df.at[index_to_update, "status"] = "done"
 
 
         ### MARK FOLLOW UP QUADRANTS AS "UNLOCKED"
@@ -111,28 +111,83 @@ class PalletTableOptimizer:
             # find the amount of components_per_quadrant of the machined quadrant
             components_per_quadrant = int(row["components_per_quadrant"])
 
-            #look for a quadrant in  quadrants_df with the same id as follow_up_quadrant_id and status "unlocked" if not status "done" and if not status "unlocked", give it status "unlocked"
+            #look for a quadrant in  operations_df with the same id as follow_up_quadrant_id and status "unlocked" if not status "done" and if not status "unlocked", give it status "unlocked"
             
             for _ in range(components_per_quadrant):  # Loop N times
                 if follow_up_quadrant_id:
-                    follow_up_quadrant_index = quadrants_df[
-                        (quadrants_df["id"] == follow_up_quadrant_id) & 
-                        (quadrants_df["status"] != "done") & 
-                        (quadrants_df["status"] != "unlocked")
+                    follow_up_quadrant_index = operations_df[
+                        (operations_df["id"] == follow_up_quadrant_id) & 
+                        (operations_df["status"] != "done") & 
+                        (operations_df["status"] != "unlocked")
                         ].index
                     
                     if not follow_up_quadrant_index.empty:
-                        quadrants_df.at[follow_up_quadrant_index[0], "status"] = "unlocked"
+                        operations_df.at[follow_up_quadrant_index[0], "status"] = "unlocked"
     
 
-        ### SAVE THE UPDATED quadrants_df TO EXCEL
-        quadrants_df.to_excel("quadrants.xlsx", index=False)
+        
+
+        ### SAVE THE UPDATED operations_df TO EXCEL
+        # orden operations_df on top "done" and then "unlocked"
+        status_order = ["done","first order","unlocked"]  # "done" comes first, followed by "unlocked"
+        operations_df["status"] = pd.Categorical(operations_df["status"], categories=status_order, ordered=True)
+        operations_df = operations_df.sort_values(by=["status"], ascending=True)
+
+        ### ASSIGN QUADRANTS TO OPERATIONS
+        assigned_operations_df = self.assign_quadrants_to_operations(operations_df)
+
+        #order first on "timestamp" and then on "pallet" and then on "quadrant"
+        assigned_operations_df = assigned_operations_df.sort_values(by=["timestamp", "pallet", "quadrant"], ascending=True)
+
+        assigned_operations_df.to_excel("quadrants.xlsx", index=False)
 
         print("machined_quadrants_df: ", machined_quadrants_df)
         print("total_machining_time: ", total_machining_time)
+        print("total_loading_time: ", total_loading_time)
         print("total_unloading_time: ", total_unloading_time)
-        print("total_unloading_time: ", total_loading_time)
-        print("Number of done quadrants: ", quadrants_df[quadrants_df["status"] == "done"].shape[0])
-        print("Number of unlocked quadrants: ", quadrants_df[quadrants_df["status"] == "unlocked"].shape[0])
+        print("Number of done quadrants: ", assigned_operations_df[assigned_operations_df["status"] == "done"].shape[0])
+        print("Number of unlocked quadrants: ", assigned_operations_df[assigned_operations_df["status"] == "unlocked"].shape[0])
 
-        return quadrants_df
+        return assigned_operations_df
+
+    def assign_quadrants_to_operations(self, operations_df):
+        pallets = [1, 2, 3, 4, 5]
+        quadrants = ['A', 'B', 'C', 'D']
+
+        # add column with time stamp in rows where 
+        if 'timestamp' not in operations_df.columns:
+            operations_df['timestamp'] = pd.NaT
+        timestamp = pd.Timestamp.now()
+        operations_df.loc[(operations_df['status'] == "done") & (pd.isna(operations_df['timestamp'])), 'timestamp'] = timestamp
+
+        # timestamp  = pd.Timestamp.now()
+        # for index, row in operations_df.iterrows():
+        #     if row['status'] == "done" and pd.isna(row['quadrant']):
+        #         operations_df['timestamp'] = timestamp
+
+        # Initialize counters to keep track of the current pallet and quadrant
+        current_pallet_index = 0
+        current_quadrant_index = 0
+
+        # Iterate through each row in the DataFrame
+        for index, row in operations_df.iterrows():
+            # Check if the status is "done"
+            if row['status'] == "done" and pd.isna(row['quadrant']):
+                # Assign the current pallet and quadrant to the operation
+                operations_df.at[index, 'pallet'] = pallets[current_pallet_index]
+                operations_df.at[index, 'quadrant'] = quadrants[current_quadrant_index]
+
+                # Move to the next quadrant
+                current_quadrant_index += 1
+
+                # If all quadrants for the current pallet are used, move to the next pallet
+                if current_quadrant_index == len(quadrants):
+                    current_quadrant_index = 0
+                    current_pallet_index += 1
+
+                    # If all pallets are used, wrap back to the first pallet
+                    if current_pallet_index == len(pallets):
+                        current_pallet_index = 0
+        
+
+        return operations_df

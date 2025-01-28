@@ -128,8 +128,16 @@ class PalletTableCreator:
         quadrant_column = (quadrant_pattern * (len(pallet_table_df) // len(quadrant_pattern) + 1))[:len(pallet_table_df)]
         pallet_table_df.insert(1, 'quadrant', quadrant_column)
 
+        # Empty all cells in "pallet" and "quadrant": yeah this is weird: above we assigned pallets and quadrants, here we empty them because above was done orginially but no w the assignmenet of quadrants and pallets happens later
+        pallet_table_df['pallet'] = None
+        pallet_table_df['quadrant'] = None
+
         # ADD STATUS COLUMN
         pallet_table_df.insert(2, 'status', "")
+        # Update rows where "bewerkings_orde" == 1 to have "first order" in "status"
+        pallet_table_df.loc[pallet_table_df["bewerkings_orde"] == 1, "status"] = "first order"
+        print(pallet_table_df)
+
 
         return  pallet_table_df
 
