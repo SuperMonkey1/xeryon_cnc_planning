@@ -30,7 +30,6 @@ class PalletTableOptimizer:
         print("machinable_quadrants_df: ", machinable_quadrants_df)
         print("Amount of machinable quadrants: ", machinable_quadrants_df.shape[0])
 
-
         ### DETERMINE TO BE MACHINED QUADRANTS
         total_machining_time = 0
         machined_quadrants_df = pd.DataFrame()
@@ -75,7 +74,6 @@ class PalletTableOptimizer:
             total_unloading_time =  machined_quadrants_df["unloading_time"].sum()
             total_loading_time =  machined_quadrants_df["loading_time"].sum()
 
-
         ### MARK MACHIEND QUADRANTS AS "DONE"
         for _, row in machined_quadrants_df.iterrows():
             # Find the indices in operations_df where "id" matches and "status" is not already "done"
@@ -87,7 +85,6 @@ class PalletTableOptimizer:
             if not indices_to_update.empty:
                 index_to_update = indices_to_update[0]  # Take the first matching index
                 operations_df.at[index_to_update, "status"] = "done"
-
 
         ### MARK FOLLOW UP QUADRANTS AS "UNLOCKED"
         for _, row in machined_quadrants_df.iterrows():
@@ -124,9 +121,6 @@ class PalletTableOptimizer:
                     if not follow_up_quadrant_index.empty:
                         operations_df.at[follow_up_quadrant_index[0], "status"] = "unlocked"
     
-
-        
-
         ### SAVE THE UPDATED operations_df TO EXCEL
         # orden operations_df on top "done" and then "unlocked"
         status_order = ["done","first order","unlocked"]  # "done" comes first, followed by "unlocked"

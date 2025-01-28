@@ -60,13 +60,6 @@ if os.path.exists(quadrants_excel_path):
 
 assigned_opperations_df= pallet_table_optimizer.fill_night(operations_df = operations_df, quadrant_types_df = quadrant_types_df)
 
-# - TOTAL MACHINE TIME
-
-# - TOTAL MANUAL TIME
-
-# Paletten tabel opsplitsen: eentje voor de nacht en eentje (?) voor de dag
-
-
 
 # TODO: excel readen zoals hij effectief gegeven wordt (nu bepaalde aanpassingen gedaan: datum)
 # TODO: excel manueel moeten unmergen... doe dit  met code
