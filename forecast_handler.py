@@ -1,19 +1,15 @@
 import pandas as pd
 
 class ForecastHandler:
-    def __init__(self, forecast_df=None):
-        """
-        Initialize the ForecastHandler with an optional existing forecast DataFrame
-        """
-        if forecast_df is not None:
-            self.forecast_elements_df = forecast_df
-        else:
-            self.forecast_elements_df = pd.DataFrame(columns=[
-                'product_type',
-                'product_force',
-                'product_size',
-                'month'
-            ])
+    def __init__(self):
+        
+        self.forecast_elements_df = pd.DataFrame(columns=[
+            'product_type',
+            'product_force',
+            'product_size',
+            'month'
+        ])
+
 
     def add_forecast_element(self, product_type, product_force, product_size, month):
         """

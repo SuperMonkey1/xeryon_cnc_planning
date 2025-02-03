@@ -14,15 +14,13 @@ import os
 project_root_path = Path(__file__).parent.absolute()  # Use __file__ instead of __name__
 project_root_str = str(project_root_path)  # Convert the Path object to string
 
-# Define subdirectory paths
+# Resources
 resources_directory = project_root_str + '/resources/'
-build_directory = project_root_str + '/build/'
-
-# Define specific file paths
 forecast_excel_file_path = resources_directory + "Salesforecast Januari 2025.xlsx"
 planning_excel_file_path = resources_directory + "planning.xlsx"
-excel_file_path_unmerged = resources_directory + "Salesforecast Januari 2025 unmerged.xlsx"
-pallet_table_excel_file_path = build_directory + "unordered_pallet_table.xlsx"
+
+# Builds
+build_directory = project_root_str + '/build/'
 operations_excel_path = build_directory + "operations.xlsx"
 
 # LOAD RESOURCES
