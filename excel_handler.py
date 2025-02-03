@@ -1,10 +1,4 @@
 import pandas as pd
-from quadrant import Quadrant
-import openpyxl
-from pathlib import Path
-from openpyxl import Workbook, load_workbook
-import math
-
 
 class ExcelHandler:
     def __init__(self, forecast_excel_file_path,planning_excel_file_path,  sheet_names_list = []):
@@ -15,7 +9,6 @@ class ExcelHandler:
         # project specific
         self.forecast_df = self.create_df_from_excel(path = self.forecast_excel_file_path, sheet_name = "forecast 2025")
         self.quadrants_df = self.create_df_from_excel(path = self.planning_excel_file_path, sheet_name = "operations_catalog")
-
 
     # GENERAL METHODS 
     def create_df_from_excel(self, path,sheet_name):     #returns a dictionary with all the info from the info sheet

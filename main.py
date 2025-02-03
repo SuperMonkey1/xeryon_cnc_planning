@@ -31,7 +31,6 @@ operations_catalog_df = excel_handler.create_df_from_excel(path = planning_excel
 ############################
 # INITIATE OPERATIONS TABLE
 ############################
-# Which products need to be made and which forecast in months
 forecast_handler = ForecastHandler()
 forecast_handler.add_forecast_element('XLS', '3', '40', 'januari')
 forecast_handler.add_forecast_element('XLS', '3', '60', 'januari')
