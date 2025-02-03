@@ -218,41 +218,39 @@ class OperationScheduler:
     def fill_night(self, operations_df, operations_catalog_df):
         
         ### DETERMINE MACHINABLE QUADRANTS (either first bewerkingen or follow up quadrants from done quadrants)
-        machinable_quadrants_df = operations_df[(operations_df['bewerkings_orde'] == 1) & (operations_df['status'] != "done")]
-        additional_machinable_df = operations_df[operations_df['status'] == "unlocked"]
-        print("Amount of machinable quadrants of order 1: ", machinable_quadrants_df.shape[0])
-        print("additional_machinable_df: ", additional_machinable_df.shape[0])
-        machinable_quadrants_df = pd.concat([machinable_quadrants_df, additional_machinable_df]).reset_index(drop=True)
+        machinable_operations_df = operations_df[(operations_df['bewerkings_orde'] == 1) & (operations_df['status'] != "done")]
+        additional_machinable_operations_df = operations_df[operations_df['status'] == "unlocked"]
+        print("Amount of machinable quadrants of order 1: ", machinable_operations_df.shape[0])
+        print("additional_machinable_df: ", additional_machinable_operations_df.shape[0])
+        machinable_operations_df = pd.concat([machinable_operations_df, additional_machinable_operations_df]).reset_index(drop=True)
 
         ##  prioritize quadrants with the longest machine time
-        machinable_quadrants_df["machine_time"] = pd.to_numeric(machinable_quadrants_df["machine_time"], errors="coerce")
-        machinable_quadrants_df = machinable_quadrants_df.sort_values(by="machine_time", ascending=False)
-        print("machinable_quadrants_df: ", machinable_quadrants_df)
-        print("Amount of machinable quadrants: ", machinable_quadrants_df.shape[0])
+        machinable_operations_df["machine_time"] = pd.to_numeric(machinable_operations_df["machine_time"], errors="coerce")
+        machinable_operations_df = machinable_operations_df.sort_values(by="machine_time", ascending=False)
 
         ### DETERMINE TO BE MACHINED QUADRANTS
         total_machining_time = 0
-        machined_quadrants_df = pd.DataFrame()
+        machined_operations_df = pd.DataFrame()
         max_quadrants = 20  # Maximum number of quadrants to machine
 
-        while total_machining_time < 840 and len(machined_quadrants_df) < max_quadrants:
+        while total_machining_time < 840 and len(machined_operations_df) < max_quadrants:
 
             # Identify IDs already in machined_quadrants_df
-            existing_ids = set(machined_quadrants_df["id"]) if not machined_quadrants_df.empty else set()
+            existing_ids = set(machined_operations_df["id"]) if not machined_operations_df.empty else set()
 
             # Filter machinable_quadrants_df for quadrants with a unique ID
-            unique_id_quadrants = machinable_quadrants_df[~machinable_quadrants_df["id"].isin(existing_ids)]
+            unique_id_quadrants = machinable_operations_df[~machinable_operations_df["id"].isin(existing_ids)]
 
             # If unique ID quadrants are available, pick the first one; otherwise, pick the first quadrant overall
             if not unique_id_quadrants.empty:
                 first_quadrant = unique_id_quadrants.head(1)
             else:
                 # If all IDs are already in machined_quadrants_df, allow duplicates but not more than 2 of the same ID
-                id_counts = machined_quadrants_df["id"].value_counts()
-                allowable_quadrants = machinable_quadrants_df[
-                    machinable_quadrants_df["id"].apply(lambda x: id_counts.get(x, 0) < 2)
+                id_counts = machined_operations_df["id"].value_counts()
+                allowable_operations = machinable_operations_df[
+                    machinable_operations_df["id"].apply(lambda x: id_counts.get(x, 0) < 2)
                 ]
-                first_quadrant = allowable_quadrants.head(1)
+                first_quadrant = allowable_operations.head(1)
 
             # If no quadrant can be picked, break the loop
             if first_quadrant.empty:
@@ -265,17 +263,17 @@ class OperationScheduler:
             if potential_machining_time > 840:
                 break  # Exit the loop if adding this quadrant exceeds the limit
 
-            machinable_quadrants_df = machinable_quadrants_df.drop(first_quadrant.index).reset_index(drop=True)
-            machined_quadrants_df = pd.concat([machined_quadrants_df, first_quadrant]).reset_index(drop=True)
+            machinable_operations_df = machinable_operations_df.drop(first_quadrant.index).reset_index(drop=True)
+            machined_operations_df = pd.concat([machined_operations_df, first_quadrant]).reset_index(drop=True)
 
-            total_machining_time = machined_quadrants_df["machine_time"].sum()
+            total_machining_time = machined_operations_df["machine_time"].sum()
             # print("firs_quadrant", first_quadrant)
             # print("total_machining_time: ", total_machining_time)
-            total_unloading_time =  machined_quadrants_df["unloading_time"].sum()
-            total_loading_time =  machined_quadrants_df["loading_time"].sum()
+            total_unloading_time =  machined_operations_df["unloading_time"].sum()
+            total_loading_time =  machined_operations_df["loading_time"].sum()
 
         ### MARK MACHIEND QUADRANTS AS "DONE"
-        for _, row in machined_quadrants_df.iterrows():
+        for _, row in machined_operations_df.iterrows():
             # Find the indices in operations_df where "id" matches and "status" is not already "done"
             indices_to_update = operations_df[
                 (operations_df["id"] == row["id"]) & (operations_df["status"] != "done")
@@ -287,7 +285,7 @@ class OperationScheduler:
                 operations_df.at[index_to_update, "status"] = "done"
 
         ### MARK FOLLOW UP QUADRANTS AS "UNLOCKED"
-        for _, row in machined_quadrants_df.iterrows():
+        for _, row in machined_operations_df.iterrows():
             # find the id of the machined quadrant
             machined_quadrant_id = row["id"]
             # look up the product and component of the machined quadrant in planning.xlsx
@@ -333,7 +331,7 @@ class OperationScheduler:
         #order first on "timestamp" and then on "pallet" and then on "quadrant"
         assigned_operations_df = assigned_operations_df.sort_values(by=["timestamp", "pallet", "quadrant"], ascending=True)
 
-        print("machined_quadrants_df: ", machined_quadrants_df)
+        print("machined_quadrants_df: ", machined_operations_df)
         print("total_machining_time: ", total_machining_time)
         print("total_loading_time: ", total_loading_time)
         print("total_unloading_time: ", total_unloading_time)
