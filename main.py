@@ -1,7 +1,7 @@
 from pathlib import Path #For routing files
 from excel_handler import ExcelHandler
-from pallet_table_creator import PalletTableCreator
 from operations_scheduler import OperationScheduler
+from forecast_handler import ForecastHandler
 import pandas as pd
 import sys 
 import os
@@ -35,16 +35,18 @@ operations_catalog_df = excel_handler.create_df_from_excel(path = planning_excel
 # INITIATE OPERATIONS TABLE
 ############################
 # Which products need to be made and which forecast in months
-product_types = ["XLS","XLS","XLS","XLS" ]
-product_forces = ["3", "3","3", "3"]
-product_sizes = ["40", "60", "80", "120"]
-months = ["januari", "januari", "januari", "januari"]
+forecast_handler = ForecastHandler()
+forecast_handler.add_forecast_element('XLS', '3', '40', 'januari')
+forecast_handler.add_forecast_element('XLS', '3', '60', 'januari')
+forecast_handler.add_forecast_element('XLS', '3', '80', 'januari')
+forecast_handler.add_forecast_element('XLS', '3', '120', 'januari')
+forecast_elements_df = forecast_handler.get_forecast_elements_df()
 
 operations_scheduler = OperationScheduler(operations_catalog_df, forecast_df)
 
 if not os.path.exists(operations_excel_path):
     # gent all required operations
-    all_required_operations_df = operations_scheduler.get_all_required_operations_df(product_types, product_sizes, product_forces, months)
+    all_required_operations_df = operations_scheduler.get_all_required_operations_df(forecast_elements_df)    
     operations_df = all_required_operations_df
 else:
     # Load the operations schedule from operations.xlsx

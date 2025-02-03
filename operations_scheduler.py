@@ -1,8 +1,6 @@
 import pandas as pd
 from openpyxl import load_workbook
-from quadrant import Quadrant
-import openpyxl
-import sys
+import math
 
 
 class OperationScheduler:
@@ -30,12 +28,12 @@ class OperationScheduler:
             if not filtered_df.empty:
                 # Convert the month column values to float and sum them
                 product_count = filtered_df[month_column].astype(float).sum() if not filtered_df.empty else 0
-                return product_count
+                return int(product_count)
             else:
                 print(" no matching data found")
                 return None
 
-    def get_quadrants_df_per_product(self,product_type, product_size, product_force):
+    def get_operations_df_per_product(self,product_type, product_size, product_force):
         
         if(product_size == "120"):
             product = f"{product_type}_{product_force}_{product_size}"
@@ -100,7 +98,7 @@ class OperationScheduler:
 
         return quadrants_df
 
-    def get_all_required_operations_df(self, product_types, product_sizes, product_forces, months): #quadrants is a df with  quadrants
+    def get_all_required_operations_df_old(self, product_types, product_sizes, product_forces, months): #quadrants is a df with  quadrants
         
         quadrants_df = self.get_quadrants_df(product_types, product_sizes, product_forces, months)
 
@@ -140,6 +138,82 @@ class OperationScheduler:
         return  pallet_table_df
 
         # save this df to excel tab (use general method)
+
+    def get_all_required_operations_df(self, forecast_elements_df):
+
+        all_required_operations_df = pd.DataFrame()
+        
+        # Iterate through forecast elements
+        for _, row in forecast_elements_df.iterrows():
+            product_type = row['product_type']
+            product_size = row['product_size']
+            product_force = row['product_force']
+            month = row['month']
+            
+            quadrants_per_product_df = self.get_operations_df_per_product(
+                product_type, product_size, product_force
+            )
+            product_count = self.get_product_count(
+                product_type, product_size, product_force, month
+            )
+
+            # Duplicate the quadrants_df based on the product count
+            repeated_quadrants_df = pd.concat(
+                [quadrants_per_product_df] * product_count, 
+                ignore_index=True
+            )
+
+            # Append the repeated data to the combined DataFrame
+            all_required_operations_df = pd.concat(
+                [all_required_operations_df, repeated_quadrants_df], 
+                ignore_index=True
+            )
+
+        # Create a copy of the DataFrame to avoid modifying the original
+        all_required_operations_df = all_required_operations_df.copy()
+
+        # Process components per quadrant
+        unique_ids = all_required_operations_df['id'].unique()
+        processed_quadrants = []
+
+        for unique_id in unique_ids:
+            id_quadrants = all_required_operations_df[all_required_operations_df['id'] == unique_id]
+            components_per_quadrant = int(id_quadrants.iloc[0]['components_per_quadrant'])
+            total_quadrants = len(id_quadrants)
+            amount_of_quadrants = math.ceil(total_quadrants / components_per_quadrant)
+            
+            if total_quadrants > amount_of_quadrants:
+                processed_quadrants.append(id_quadrants.head(amount_of_quadrants))
+            else:
+                processed_quadrants.append(id_quadrants)
+
+        # Combine processed quadrants
+        result_df = pd.concat(processed_quadrants, ignore_index=True)
+
+        # Add required columns and convert data types
+        operations_df = result_df[["id", "loading_time", "machine_time", 
+                                    "unloading_time", "bewerkings_orde", 
+                                    "components_per_quadrant"]]
+
+        # Convert numeric columns
+        numeric_columns = ["loading_time", "machine_time", "unloading_time", 
+                        "bewerkings_orde", "components_per_quadrant"]
+        
+        for col in numeric_columns:
+            operations_df[col] = pd.to_numeric(
+                operations_df[col], 
+                errors="coerce"
+            ).fillna(0).astype(int)
+
+        # Add empty pallet and quadrant columns
+        operations_df.insert(0, 'pallet', None)
+        operations_df.insert(1, 'quadrant', None)
+
+        # Add status column
+        operations_df.insert(2, 'status', "")
+        operations_df.loc[operations_df["bewerkings_orde"] == 1, "status"] = "first order"
+
+        return operations_df
 
     def fill_night(self, operations_df, operations_catalog_df):
         
