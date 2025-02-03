@@ -14,7 +14,7 @@ class ExcelHandler:
 
         # project specific
         self.forecast_df = self.create_df_from_excel(path = self.forecast_excel_file_path, sheet_name = "forecast 2025")
-        self.quadrants_df = self.create_df_from_excel(path = self.planning_excel_file_path, sheet_name = "quadrants")
+        self.quadrants_df = self.create_df_from_excel(path = self.planning_excel_file_path, sheet_name = "operations_catalog")
 
 
     # GENERAL METHODS 
