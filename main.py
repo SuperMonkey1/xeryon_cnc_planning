@@ -37,9 +37,9 @@ forecast_handler.add_forecast_element('XLS', '3', '40', 'januari')
 forecast_handler.add_forecast_element('XLS', '3', '60', 'januari')
 forecast_handler.add_forecast_element('XLS', '3', '80', 'januari')
 forecast_handler.add_forecast_element('XLS', '3', '120', 'januari')
-forecast_elements_df = forecast_handler.get_forecast_elements_df()
+forecast_elements_df = forecast_handler.get_forecast_elements_df() # TODO: get forecats count per product
 
-operations_scheduler = OperationScheduler(operations_catalog_df, forecast_df)
+operations_scheduler = OperationScheduler(operations_catalog_df, forecast_df) #TODO: should get forecast_elements_df instead of forecast_df
 
 if not os.path.exists(operations_excel_path):
     # gent all required operations
