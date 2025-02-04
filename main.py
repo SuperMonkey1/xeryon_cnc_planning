@@ -5,6 +5,7 @@ from forecast_handler import ForecastHandler
 import pandas as pd
 import sys 
 import os
+import time
 
 ############################
 # Setup
@@ -56,8 +57,17 @@ if os.path.exists(operations_excel_path):
     # Load the DataFrame from the Excel file
     operations_df = pd.read_excel(operations_excel_path)
 
+# NIGHT SHIFT
 operations_df = operations_scheduler.fill_night(operations_df, operations_catalog_df)
 operations_df.to_excel(operations_excel_path, index=False)
+print("Operations scheduled. Please evaluate the planned operations and afterwards Press enter to continue.")
+input()
+
+#MORNING SHIFT
+operations_df = pd.read_excel(operations_excel_path)
+operations_df = operations_scheduler.fill_day(operations_df, operations_catalog_df)
+operations_df.to_excel(operations_excel_path, index=False)
+
 
 
 # TODO: excel readen zoals hij effectief gegeven wordt (nu bepaalde aanpassingen gedaan: datum)
@@ -65,3 +75,4 @@ operations_df.to_excel(operations_excel_path, index=False)
 # TODO: tab quadranten: product opsplitsen in product_type, product_size, product_force to align with forecast
 # TODO: data type for excel_reader.get_quadrants should be one big dictionary and not lists or even better: list of products ["XLS_3_040", "XLS_3_060"]
 # TODO: implement multiple possible follow up operations (? is dit nodig?)
+# TODO: keuze quadranten verbeteren (of aan operator laten?)
