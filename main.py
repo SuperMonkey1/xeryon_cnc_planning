@@ -76,3 +76,5 @@ operations_df.to_excel(operations_excel_path, index=False)
 # TODO: data type for excel_reader.get_quadrants should be one big dictionary and not lists or even better: list of products ["XLS_3_040", "XLS_3_060"]
 # TODO: implement multiple possible follow up operations (? is dit nodig?)
 # TODO: keuze quadranten verbeteren (of aan operator laten?)
+# TODO: als een operatie failes, dan moeten ook alle voorgaande operaties op de component gereset worden
+# TODO: volgende maand starten als eerste niet meer effcient machine en operator vult

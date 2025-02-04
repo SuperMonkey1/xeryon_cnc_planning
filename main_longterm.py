@@ -87,14 +87,14 @@ while not has_finished:
     print("Total remaining time of day shift: ", total_remaining_time_of_day_shift)
 
     if total_remaining_time_of_day_shift < 0:
-        #start night shift
+        
+        # ADD NIGHT SHIFT
         print("Planning night shift")
         operations_df = operations_night_df
         total_remaining_time_of_day_shift = total_time_of_day_shift
         loading_time = total_loading_time_night
         machining_time = total_machining_time_night
         unloading_time = total_unloading_time_night
-        # Update planning with night shift data
 
         planning_df = planner.update_planning_df(
             loading_time, 
@@ -104,7 +104,7 @@ while not has_finished:
         )
 
     else:
-        print("Planning day shift")
+        # ADD DAY SHIFT
         operations_df = operations_day_df
         loading_time = total_loading_time_day
         machining_time = total_machining_time_day
@@ -136,6 +136,11 @@ while not has_finished:
         has_finished = True
 
 print("done planning")
+
+# TODO: gantt chart serie planning (operator, machine)
+# TODO: pallet table generator
+# TODO: main operator
+# TODO: ideal daily scheme (gantt chart)
 
 
 # TODO: excel readen zoals hij effectief gegeven wordt (nu bepaalde aanpassingen gedaan: datum)
