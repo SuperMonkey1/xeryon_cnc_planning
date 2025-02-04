@@ -1,7 +1,7 @@
 import pandas as pd
 from openpyxl import load_workbook
 import math
-
+import sys
 
 class OperationScheduler:
     def __init__(self, quadrants_df, forecast_df):
@@ -123,29 +123,64 @@ class OperationScheduler:
 
     def fill_night(self, operations_df, operations_catalog_df):
         
+        ### PARAMETERS
+        duration_of_night = 840  # Duration of the night in minutes
+        max_quadrants = 20  # Maximum number of quadrants to machine
+
+        # RELOCK THE OPERATIONS OF WHICH THE UNLOCKING OPERATION HAS THE STATUS "FAILED"  (TODO: pas unlocken bij done?)
+        failed_operations_ids = operations_df[operations_df["status"] == "failed"]["id"]
+        
+        for failed_operation_id in failed_operations_ids:
+            # change status to "" for the failed operations
+            failed_operation_index = operations_df[(operations_df["id"] == failed_operation_id) & (operations_df['status'] == "failed" ) ].index
+            operations_df.at[failed_operation_index[0], "status"] = ""
+
+            failed_operation_product = operations_catalog_df[operations_catalog_df["id"] == failed_operation_id]["product"].values[0]
+            failed_operation_component = operations_catalog_df[operations_catalog_df["id"] == failed_operation_id]["component"].values[0]
+
+            #get the follow up_id if exists
+            row_number = operations_catalog_df[operations_catalog_df["id"] == failed_operation_id].index[0]
+            # get the id of the next row in operations_catalog_df
+            follow_up_operation_id = operations_catalog_df.iloc[row_number + 1]["id"]
+            follow_up_operation_product = operations_catalog_df[operations_catalog_df["id"] == follow_up_operation_id]["product"].values[0]
+            follow_up_operation_component = operations_catalog_df[operations_catalog_df["id"] == follow_up_operation_id]["component"].values[0]
+
+            if not (follow_up_operation_product == failed_operation_product and follow_up_operation_component == failed_operation_component):
+                follow_up_operation_id = None
+            else:
+                # determine the amount of operations that need to be relocked
+                components_per_operation = int(operations_df[operations_df["id"] == failed_operation_id]["components_per_quadrant"].values[0])
+                for _ in range(components_per_operation):
+                    follow_up_operation_index = operations_df[
+                        (operations_df["id"] == follow_up_operation_id) & 
+                        (operations_df["status"] == "unlocked")
+                        ].index
+                    if not follow_up_operation_index.empty:
+                        operations_df.at[follow_up_operation_index[0], "status"] = ""
+                    else:
+                        print("No follow up operation found to relock.")
+        
+        
         ### DETERMINE MACHINABLE OPERATIONS (either first bewerkingen or follow up operations from done operations)
         machinable_operations_df = operations_df[(operations_df['bewerkings_orde'] == 1) & (operations_df['status'] != "done")]
         additional_machinable_operations_df = operations_df[operations_df['status'] == "unlocked"]
         machinable_operations_df = pd.concat([machinable_operations_df, additional_machinable_operations_df]).reset_index(drop=True)
-
-        ##  prioritize operations with the longest machine time
-        machinable_operations_df["machine_time"] = pd.to_numeric(machinable_operations_df["machine_time"], errors="coerce")
-        machinable_operations_df = machinable_operations_df.sort_values(by="machine_time", ascending=False)
-
+        
         ### DETERMINE TO BE MACHINED OPERATIONS
         total_machining_time = 0
         machined_operations_df = pd.DataFrame()
-        max_quadrants = 20  # Maximum number of quadrants to machine
 
-        while total_machining_time < 840 and len(machined_operations_df) < max_quadrants:
+        ##  FIRST WE PRIORITIZE OPERATIONS WIT THE lONGEST MACHINE TIME
+        machinable_operations_df["machine_time"] = pd.to_numeric(machinable_operations_df["machine_time"], errors="coerce")
+        machinable_operations_df = machinable_operations_df.sort_values(by="machine_time", ascending=False)
 
-            # Identify IDs already in machined_operations_df
+        while total_machining_time < duration_of_night and len(machined_operations_df) < max_quadrants:
+
+            # SECOND WE FILL THE MACHINE WITH OPERATIONS OF DIFFERENT TYPES
             existing_ids = set(machined_operations_df["id"]) if not machined_operations_df.empty else set()
-
-            # Filter machinable_operations_df for operations with a unique ID
             unique_id_operations = machinable_operations_df[~machinable_operations_df["id"].isin(existing_ids)]
 
-            # If unique ID operations are available, pick the first one; otherwise, pick the first operation overall
+            # IF THERE ARE STILL QUADRANTS TO FILL, WE FILL THEM WITH DUPLICATE OPERATIONS (MAX 2 PER ID, because of the limited amount of fixtures)
             if not unique_id_operations.empty:
                 first_operation = unique_id_operations.head(1)
             else:
@@ -164,9 +199,9 @@ class OperationScheduler:
             # Calculate the potential new total machining time
             potential_machining_time = total_machining_time + first_operation["machine_time"].iloc[0]
             
-            if potential_machining_time > 840:
+            if potential_machining_time > duration_of_night:
                 break  # Exit the loop if adding this operation exceeds the limit
-
+            
             machinable_operations_df = machinable_operations_df.drop(first_operation.index).reset_index(drop=True)
             machined_operations_df = pd.concat([machined_operations_df, first_operation]).reset_index(drop=True)
 
@@ -174,17 +209,18 @@ class OperationScheduler:
             total_unloading_time =  machined_operations_df["unloading_time"].sum()
             total_loading_time =  machined_operations_df["loading_time"].sum()
 
-        ### MARK MACHIEND OPERATIONS AS "DONE"
+        
+        ### MARK MACHIENED OPERATIONS AS "PLANNED"
         for _, row in machined_operations_df.iterrows():
-            # Find the indices in operations_df where "id" matches and "status" is not already "done"
+            # Find the indices in operations_df where "id" matches and "status" is not already "planned" nor "done"
             indices_to_update = operations_df[
-                (operations_df["id"] == row["id"]) & (operations_df["status"] != "done")
+                (operations_df["id"] == row["id"]) & (operations_df["status"] != "planned") & (operations_df["status"] != "done")
             ].index
             
             # Only update one row in operations_df per row in machined_operations
             if not indices_to_update.empty:
                 index_to_update = indices_to_update[0]  # Take the first matching index
-                operations_df.at[index_to_update, "status"] = "done"
+                operations_df.at[index_to_update, "status"] = "planned"
 
         ### MARK FOLLOW UP OPERATIONS AS "UNLOCKED"
         for _, row in machined_operations_df.iterrows():
@@ -200,9 +236,7 @@ class OperationScheduler:
             follow_up_operation_id = operations_catalog_df.iloc[row_number + 1]["id"]
             follow_up_operation_product = operations_catalog_df[operations_catalog_df["id"] == follow_up_operation_id]["product"].values[0]
             follow_up_operation_component = operations_catalog_df[operations_catalog_df["id"] == follow_up_operation_id]["component"].values[0]
-            if follow_up_operation_product == machined_operation_product and follow_up_operation_component == machined_operation_component:
-                pass
-            else:
+            if not (follow_up_operation_product == machined_operation_product and follow_up_operation_component == machined_operation_component):
                 follow_up_operation_id = None
             
             # find the amount of components_per_operation of the machined operation
@@ -214,6 +248,7 @@ class OperationScheduler:
                 if follow_up_operation_id:
                     follow_up_operation_index = operations_df[
                         (operations_df["id"] == follow_up_operation_id) & 
+                        (operations_df["status"] != "planned") & 
                         (operations_df["status"] != "done") & 
                         (operations_df["status"] != "unlocked")
                         ].index
@@ -223,7 +258,7 @@ class OperationScheduler:
     
         ### SAVE THE UPDATED operations_df TO EXCEL
         # orden operations_df on top "done" and then "unlocked"
-        status_order = ["done","first order","unlocked"]  # "done" comes first, followed by "unlocked"
+        status_order = ["done", "planned","first order","unlocked"]  # "done" comes first, followed by "unlocked"
         operations_df["status"] = pd.Categorical(operations_df["status"], categories=status_order, ordered=True)
         operations_df = operations_df.sort_values(by=["status"], ascending=True)
 
@@ -237,7 +272,7 @@ class OperationScheduler:
         print("total_machining_time: ", total_machining_time)
         print("total_loading_time: ", total_loading_time)
         print("total_unloading_time: ", total_unloading_time)
-        print("Number of done operations: ", assigned_operations_df[assigned_operations_df["status"] == "done"].shape[0])
+        print("Number of done operations: ", assigned_operations_df[assigned_operations_df["status"] == "planned"].shape[0])
         print("Number of unlocked operations: ", assigned_operations_df[assigned_operations_df["status"] == "unlocked"].shape[0])
 
         return assigned_operations_df
@@ -250,7 +285,7 @@ class OperationScheduler:
         if 'timestamp' not in operations_df.columns:
             operations_df['timestamp'] = pd.NaT
         timestamp = pd.Timestamp.now()
-        operations_df.loc[(operations_df['status'] == "done") & (pd.isna(operations_df['timestamp'])), 'timestamp'] = timestamp
+        operations_df.loc[(operations_df['status'] == "planned") & (pd.isna(operations_df['timestamp'])), 'timestamp'] = timestamp
 
         # timestamp  = pd.Timestamp.now()
         # for index, row in operations_df.iterrows():
@@ -264,7 +299,7 @@ class OperationScheduler:
         # Iterate through each row in the DataFrame
         for index, row in operations_df.iterrows():
             # Check if the status is "done"
-            if row['status'] == "done" and pd.isna(row['quadrant']):
+            if row['status'] == "planned" and pd.isna(row['quadrant']):
                 # Assign the current pallet and quadrant to the operation
                 operations_df.at[index, 'pallet'] = pallets[current_pallet_index]
                 operations_df.at[index, 'quadrant'] = quadrants[current_quadrant_index]

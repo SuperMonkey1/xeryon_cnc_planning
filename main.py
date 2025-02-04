@@ -64,3 +64,4 @@ operations_df.to_excel(operations_excel_path, index=False)
 # TODO: excel manueel moeten unmergen... doe dit  met code
 # TODO: tab quadranten: product opsplitsen in product_type, product_size, product_force to align with forecast
 # TODO: data type for excel_reader.get_quadrants should be one big dictionary and not lists or even better: list of products ["XLS_3_040", "XLS_3_060"]
+# TODO: implement multiple possible follow up operations (? is dit nodig?)
