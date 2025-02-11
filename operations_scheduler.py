@@ -99,7 +99,7 @@ class OperationScheduler:
         # Add required columns and convert data types
         operations_df = result_df[["id", "loading_time", "machine_time", 
                                     "unloading_time", "bewerkings_orde", 
-                                    "components_per_quadrant"]]
+                                    "components_per_quadrant", "hfile"]]
 
         # Convert numeric columns
         numeric_columns = ["loading_time", "machine_time", "unloading_time", 

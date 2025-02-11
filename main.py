@@ -58,15 +58,16 @@ if os.path.exists(operations_excel_path):
     operations_df = pd.read_excel(operations_excel_path)
 
 # NIGHT SHIFT
-operations_df = operations_scheduler.fill_night(operations_df, operations_catalog_df)
-operations_df.to_excel(operations_excel_path, index=False)
-print("Operations scheduled. Please evaluate the planned operations and afterwards Press enter to continue.")
-input()
+assigned_operations_df, total_loading_time, total_machining_time ,total_unloading_time = operations_scheduler.fill_night(operations_df, operations_catalog_df)
+assigned_operations_df.to_excel(operations_excel_path, index=False)
 
-#MORNING SHIFT
-operations_df = pd.read_excel(operations_excel_path)
-operations_df = operations_scheduler.fill_day(operations_df, operations_catalog_df)
-operations_df.to_excel(operations_excel_path, index=False)
+
+#print("Operations scheduled. Please evaluate the planned operations and afterwards Press enter to continue.")
+#input()
+# #MORNING SHIFT
+# operations_df = pd.read_excel(operations_excel_path)
+# operations_df = operations_scheduler.fill_day(operations_df, operations_catalog_df)
+# operations_df.to_excel(operations_excel_path, index=False)
 
 
 

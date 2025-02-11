@@ -64,6 +64,7 @@ total_time_of_day_shift = 8 * 60
 total_remaining_time_of_day_shift = total_time_of_day_shift
 max_pallet_table_time_during_day = 120
 has_finished = False
+total_remaining_time_of_day_shift = 8 * 60 
 
 # LONG TERM PLANNING (if all machiening goes well, but machine loading and unloading not in parallel with machineing)
 
@@ -118,33 +119,16 @@ while not has_finished:
         )
     
 
-    # mark all planned operations as done
-    operations_df.loc[operations_df["status"] == "planned", "status"] = "done"
-
     # save to excel
     operations_df.to_excel(operations_excel_path, index=False)
     planning_df.to_excel(planning_excel_path, index=False)
-
-    # mark all planned operations as done
-    operations_df.loc[operations_df["status"] == "planned", "status"] = "done"
 
     # print("Operations scheduled. Please evaluate the planned operations and afterwards Press enter to continue.")
     # input()
 
     if  operations_df[operations_df["status"] != "done"].empty:
         has_finished = True
+    
+    sys.exit()
 
-print("done planning")
-
-# TODO: gantt chart serie planning (operator, machine)
-# TODO: pallet table generator
-# TODO: main operator
-# TODO: ideal daily scheme (gantt chart)
-
-
-# TODO: excel readen zoals hij effectief gegeven wordt (nu bepaalde aanpassingen gedaan: datum)
-# TODO: excel manueel moeten unmergen... doe dit  met code
-# TODO: tab quadranten: product opsplitsen in product_type, product_size, product_force to align with forecast
-# TODO: data type for excel_reader.get_quadrants should be one big dictionary and not lists or even better: list of products ["XLS_3_040", "XLS_3_060"]
-# TODO: implement multiple possible follow up operations (? is dit nodig?)
-# TODO: keuze quadranten verbeteren (of aan operator laten?)
+print("next batch calculated")

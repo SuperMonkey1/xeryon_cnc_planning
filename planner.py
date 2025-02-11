@@ -6,7 +6,7 @@ import sys
 class Planner:
     def __init__(self):
         pass
-    
+
     def update_planning_df(self, loading_time, machining_time, unloading_time, is_night_shift=False):
         """
         Updates the planning DataFrame with shift statistics and adds summary rows before datum changes.
@@ -117,6 +117,7 @@ class Planner:
         self.last_shift_type = shift_type
 
         return self.planning_df
+    
     def update_planning_df_old(self, loading_time, machining_time, unloading_time, is_night_shift=False):
 
         # Initialize planning_df if it doesn't exist as class attribute
