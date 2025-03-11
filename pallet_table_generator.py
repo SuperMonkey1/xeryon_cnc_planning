@@ -1,8 +1,3 @@
-# This script generates a pallet table (.P file) based on the planned operations in operations.xlsx. 
-
-import pandas as pd
-from pathlib import Path
-import sys
 
 class PalletTableGenerator:
     def __init__(self):
@@ -29,17 +24,17 @@ class PalletTableGenerator:
     
     def get_preset(self, quadrant):
         if quadrant == "A":
-            return 41
+            return 31
         elif quadrant == "B":
-            return 42
+            return 32
         elif quadrant == "C":
-            return 43
+            return 33
         elif quadrant == "D":
-            return 44
+            return 34
         else:
             raise ValueError(f"Invalid quadrant number: {quadrant}")
         
-    def generate_pallet_table(self, operations_df, output_path):
+    def generate_pallet_table(self, operations_df, output_path, filename):
 
         # PREPARE OPERATIONS DATAFRAME
         planned_ops = operations_df[operations_df['status'] == 'planned'].copy()
@@ -48,7 +43,7 @@ class PalletTableGenerator:
         planned_ops = planned_ops.sort_values(['pallet', 'quadrant'])
         
         # INITIATE PALLET TABLE
-        content = ['BEGIN PALLET_FORE.P MM\n']
+        content = ["BEGIN " + filename+' MM\n']
         header_dict = {col: col for col in self.column_widths.keys()}
         content.append(self.format_line(header_dict))
         
@@ -68,7 +63,7 @@ class PalletTableGenerator:
                 change_pallet_dict = {
                     'NR': str(line_number),
                     'TYPE': 'PAL',
-                    'NAME': str(pallet),
+                    'NAME': str(int(pallet)),
                     'DATUM': "",
                     'PRESET': '',
                     'LOCATION': 'MA',
@@ -86,12 +81,12 @@ class PalletTableGenerator:
                 'NR': str(line_number),
                 'TYPE': 'PGM',
                 'NAME': str(file_name),
-                'DATUM': "",
+                'DATUM': "DATUM_ARRAY_Z.D",
                 'PRESET': str(preset),
                 'LOCATION': '',
                 'LOCK': '',
-                'W-STATUS': 'WPO',
-                'METHOD': '',
+                'W-STATUS': "",
+                'METHOD': 'WPO',
                 'CTID': ''
                 }
             line_number += 1
@@ -106,15 +101,3 @@ class PalletTableGenerator:
         
         return True
 
-if __name__ == "__main__":
-    # Example usage
-    project_root = Path(__file__).parent.absolute()
-    operations_path = project_root / 'build' / 'operations.xlsx'
-    output_path = project_root / 'build' / 'PALLET_TABLE_FRE_2.P'
-    
-    # Read operations Excel file
-    operations_df = pd.read_excel(operations_path)
-    
-    # Generate pallet table
-    generator = PalletTableGenerator()
-    generator.generate_pallet_table(operations_df, output_path)

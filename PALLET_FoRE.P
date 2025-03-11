@@ -1,6 +1,0 @@
-BEGIN PALLET_FORE.P MM
-NR       TYPE    NAME                                                            DATUM                           PRESET  LOCATION LOCK W-STATUS    METHOD CTID    
-0        PAL     3                                                                                                       MA                                       
-1        PGM     TNC:\nc_prog\FRE\ARRAY_ONDER _test1.H                                                           19                    SKIP        WPO            
-2        PGM     TNC:\nc_prog\FRE\ARRAY_ONDER _test2.H                                                           20                    INCOMPLETE  WPO            
-[END]
