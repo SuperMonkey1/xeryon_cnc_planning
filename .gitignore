@@ -172,5 +172,4 @@ cython_debug/
 
 
 # IP: don not upload Resources, nor builds
-resources/
 build/
